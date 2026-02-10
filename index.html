@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayBook | Book Your Pitch</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        /* HERO */
+        .hero {
+            height: 60vh;
+            background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)),
+                url('assets/images/herosection/herosection.jpg');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        /* TURF CARD */
+        .turf-card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .turf-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .turf-card img {
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: #198754;
+        }
+
+        .form-range {
+            max-width: 400px;
+        }
+
+        #priceRange {
+            height: 6px;
+            cursor: pointer;
+        }
+
+        .favorite-btn {
+            border: 1px solid #dc3545;
+            background: white;
+            color: #dc3545;
+        }
+
+        .favorite-btn.active {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-dark bg-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="#">PlayBook</a>
+            <span id="userWelcome" class="text-white fw-bold me-3"></span>
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-light btn-sm" onclick="openBookings()">
+                    <i class="bi bi-receipt"></i> My Bookings
+                </button>
+                <button class="btn btn-outline-danger btn-sm" onclick="openFavorites()">
+                    ❤️ Favorites
+                </button>
+                <button id="adminBtn" class="btn btn-warning btn-sm d-none" onclick="window.location.href='admin.html'">
+                    Admin
+                </button>
+
+
+                <button class="btn btn-danger btn-sm" onclick="logoutUser()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <header class="hero">
+        <div class="container">
+            <h1 class="fw-bold display-4">
+                Play Smarter with <span class="text-success">PlayBook</span>
+            </h1>
+            <p class="lead mt-3 mb-4">
+                Book premium football turfs across the city — anytime, anywhere.
+            </p>
+
+            <div class="d-flex justify-content-center gap-3">
+                <button class="btn btn-success btn-lg fw-bold" onclick="scrollToTurfs()">Book a Turf</button>
+                <button class="btn btn-outline-success btn-lg" onclick="openSearch()">Search Near Turf</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- FEATURES -->
+    <section class="container my-5">
+        <div class="row text-center g-4">
+            <div class="col-md-3">
+                <i class="bi bi-lightning-charge-fill feature-icon"></i>
+                <h5 class="fw-bold mt-2">Instant Booking</h5>
+            </div>
+            <div class="col-md-3">
+                <i class="bi bi-geo-alt-fill feature-icon"></i>
+                <h5 class="fw-bold mt-2">Prime Locations</h5>
+            </div>
+            <div class="col-md-3">
+                <i class="bi bi-brightness-high-fill feature-icon"></i>
+                <h5 class="fw-bold mt-2">Night Play</h5>
+            </div>
+            <div class="col-md-3">
+                <i class="bi bi-shield-check feature-icon"></i>
+                <h5 class="fw-bold mt-2">Safe & Secure</h5>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURED TURFS -->
+    <section class="container my-5" id="featuredTurfs">
+        <h2 class="fw-bold mb-3">Featured Turfs</h2>
+        <div class="mb-4">
+            <label class="fw-bold mb-2">
+                Max Price: ₹<span id="priceValue">2000</span>
+            </label>
+
+            <input id="priceRange" type="range" min="500" max="2000" step="100" value="2000" class="w-100"
+                oninput="filterByPrice(this.value)">
+        </div>
+
+
+
+        <!-- CATEGORY FILTER -->
+        <div class="mb-3 d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-success" onclick="filterCategory('all')">All</button>
+            <button class="btn btn-outline-success" onclick="filterCategory('5v5')">5v5</button>
+            <button class="btn btn-outline-success" onclick="filterCategory('7v7')">7v7</button>
+            <button class="btn btn-outline-success" onclick="filterCategory('Budget')">Budget</button>
+            <button class="btn btn-outline-success" onclick="filterCategory('Premium')">Premium</button>
+        </div>
+
+        <!-- SEARCH -->
+        <div class="mb-4 d-none" id="searchBox">
+            <input type="text" class="form-control form-control-lg" placeholder="Search by turf name or location..."
+                oninput="searchTurfs(this.value)">
+        </div>
+
+        <div class="row" id="turfContainer"></div>
+        <div class="d-flex justify-content-center mt-4" id="pagination"></div>
+
+    </section>
+
+    <!-- BOOKINGS MODAL -->
+    <div class="modal fade" id="bookingsModal">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">My Bookings</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="bookingList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="favoritesModal">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">My Favorites</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="favoriteList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-dark text-white text-center py-4">
+        © 2026 PlayBook. All rights reserved.
+    </footer>
+
+    <!-- JS -->
+    <script>
+        /* ================= DATA ================= */
+        const featuredTurfs = [
+            { _id: "pb-anna", branch: "PlayBook – Anna Nagar", location: "Anna Nagar", pricePerHour: 1200, category: "5v5", image: "assets/images/featured/featured 1.jpg" },
+            { _id: "pb-vel", branch: "PlayBook – Velachery", location: "Velachery", pricePerHour: 1500, category: "7v7", image: "assets/images/featured/featured 11.jpg" },
+            { _id: "pb-omr", branch: "PlayBook – OMR", location: "OMR", pricePerHour: 1000, category: "Budget", image: "assets/images/featured/featured 12.jpg" },
+            { _id: "pb-porur", branch: "PlayBook – Porur", location: "Porur", pricePerHour: 1300, category: "5v5", image: "assets/images/featured/featured 13.jpg" },
+            { _id: "pb-amb", branch: "PlayBook – Ambattur", location: "Ambattur", pricePerHour: 1600, category: "Premium", image: "assets/images/featured/featured 14.jpg" },
+            { _id: "pb-med", branch: "PlayBook – Medavakkam", location: "Medavakkam", pricePerHour: 900, category: "Budget", image: "assets/images/featured/featured 5.jpg" },
+            {
+                _id: "pb-tambaram",
+                branch: "PlayBook – Tambaram",
+                location: "Tambaram",
+                pricePerHour: 1100,
+                category: "5v5",
+                image: "assets/images/featured/featured 1.jpg"
+            },
+            {
+                _id: "pb-adyar",
+                branch: "PlayBook – Adyar",
+                location: "Adyar",
+                pricePerHour: 1400,
+                category: "7v7",
+                image: "assets/images/featured/featured 2.jpg"
+            },
+            {
+                _id: "pb-tnagar",
+                branch: "PlayBook – T Nagar",
+                location: "T Nagar",
+                pricePerHour: 1300,
+                category: "Premium",
+                image: "assets/images/featured/featured 3.jpg"
+            },
+            {
+                _id: "pb-perambur",
+                branch: "PlayBook – Perambur",
+                location: "Perambur",
+                pricePerHour: 900,
+                category: "Budget",
+                image: "assets/images/featured/featured 4.jpg"
+            },
+            {
+                _id: "pb-thoraipakkam",
+                branch: "PlayBook – Thoraipakkam",
+                location: "Thoraipakkam",
+                pricePerHour: 1200,
+                category: "5v5",
+                image: "assets/images/featured/featured 5.jpg"
+            },
+            {
+                _id: "pb-mogappair",
+                branch: "PlayBook – Mogappair",
+                location: "Mogappair",
+                pricePerHour: 1000,
+                category: "Budget",
+                image: "assets/images/featured/featured 6.jpg"
+            },
+            {
+                _id: "pb-ashoknagar",
+                branch: "PlayBook – Ashok Nagar",
+                location: "Ashok Nagar",
+                pricePerHour: 1350,
+                category: "7v7",
+                image: "assets/images/featured/featured 7.jpg"
+            },
+            {
+                _id: "pb-pallavaram",
+                branch: "PlayBook – Pallavaram",
+                location: "Pallavaram",
+                pricePerHour: 950,
+                category: "Budget",
+                image: "assets/images/featured/featured 8.jpg"
+            },
+            {
+                _id: "pb-eguindy",
+                branch: "PlayBook – Ekkatuthangal",
+                location: "Ekkatuthangal",
+                pricePerHour: 1450,
+                category: "Premium",
+                image: "assets/images/featured/featured 9.jpg"
+            }
+
+        ];
+
+        /* ================= RENDER WITH ANIMATION ================= */
+        function animateRender(list) {
+            const container = document.getElementById("turfContainer");
+            container.innerHTML = "";
+
+            list.forEach((t, i) => {
+                const div = document.createElement("div");
+                div.className = "col-md-4 mb-4";
+                div.style.opacity = 0;
+                div.style.transform = "translateY(20px)";
+                div.style.transition = "0.15s ease-out";
+
+                div.innerHTML = `
+                    <div class="card turf-card">
+                        <img src="${t.image}" class="w-100" loading="lazy">
+
+                        <div class="card-body">
+                            <h5 class="fw-bold">${t.branch}</h5>
+                            <p class="text-muted">${t.location}</p>
+                            <span class="badge bg-success">${t.category}</span>
+                            <div class="text-warning mb-1">
+    ★★★★☆
+</div>
+
+<p class="fw-bold mt-2">₹${t.pricePerHour}/hr</p>
+
+                            <div class="d-flex gap-2">
+    <a href="turf-details.html?id=${t._id}&price=${t.pricePerHour}" 
+       class="btn btn-success w-100">
+       Book Now
+    </a>
+
+    <button class="btn favorite-btn"
+data-id="${t._id}"
+onclick="toggleFavorite('${t._id}', this)">
+❤️
+</button>
+
+</div>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(div);
+                setTimeout(() => {
+                    div.style.opacity = 1;
+                    div.style.transform = "translateY(0)";
+                }, i * 40);
+            });
+            loadFavoritesUI();
+        }
+
+        function loadTurfs() {
+            filteredTurfs = featuredTurfs;
+            paginate(filteredTurfs);
+        }
+
+        function filterCategory(cat) {
+            filteredTurfs = cat === "all"
+                ? featuredTurfs
+                : featuredTurfs.filter(t => t.category === cat);
+
+            currentPage = 1;
+            paginate(filteredTurfs);
+        }
+
+
+        function searchTurfs(q) {
+            q = q.toLowerCase();
+
+            filteredTurfs = featuredTurfs.filter(t =>
+                t.branch.toLowerCase().includes(q) ||
+                t.location.toLowerCase().includes(q)
+            );
+
+            currentPage = 1;
+            paginate(filteredTurfs);
+        }
+
+
+        function openSearch() {
+            document.getElementById("searchBox").classList.remove("d-none");
+            scrollToTurfs();
+        }
+
+        function scrollToTurfs() {
+            document.getElementById("featuredTurfs").scrollIntoView({ behavior: "smooth" });
+        }
+
+        function logoutUser() {
+            localStorage.removeItem("loggedInUser");
+            localStorage.removeItem("isLoggedIn");
+            window.location.href = "login.html";
+        }
+
+        function openBookings() {
+            const currentUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+            fetch("http://localhost:5000/api/bookings")
+                .then(res => res.json())
+                .then(allBookings => {
+
+                    const userBookings = allBookings.filter(
+                        b => b.userEmail === currentUser.email
+                    );
+
+                    const list = document.getElementById("bookingList");
+
+                    if (userBookings.length === 0) {
+                        list.innerHTML = "<p class='text-center text-muted'>No bookings found</p>";
+                    } else {
+                        list.innerHTML = userBookings.map(b => `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="fw-bold">${b.turfId}</h5>
+
+                            <p><b>Name:</b> ${b.name}</p>
+                            <p><b>Phone:</b> ${b.phone}</p>
+
+                            <p><b>Date:</b> ${b.date}</p>
+                            <p><b>Slots:</b> ${b.slots.join(", ")}</p>
+
+                            <p class="fw-bold text-success">₹${b.totalPrice}</p>
+
+                            <button class="btn btn-danger btn-sm"
+                                onclick="cancelBooking('${b.bookingId}')">
+                                Cancel Booking
+                            </button>
+                        </div>
+                    </div>
+                `).join("");
+                    }
+
+                    new bootstrap.Modal(
+                        document.getElementById("bookingsModal")
+                    ).show();
+                });
+        }
+
+
+        function cancelBooking(bookingId) {
+            if (!confirm("Are you sure you want to cancel this booking?")) return;
+
+            fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+                method: "DELETE"
+            })
+                .then(res => res.json())
+                .then(() => {
+                    alert("❌ Booking cancelled");
+                    openBookings();   // reload list
+                })
+                .catch(() => {
+                    alert("Cancel failed");
+                });
+        }
+
+
+        // SHOW ADMIN BUTTON ONLY FOR ADMIN
+        const ADMIN_EMAIL = "admin@playbook.com";
+        const currentUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+        if (currentUser && currentUser.email === ADMIN_EMAIL) {
+            document.getElementById("adminBtn").classList.remove("d-none");
+        }
+        let currentPage = 1;
+        const itemsPerPage = 6;
+        let filteredTurfs = [...featuredTurfs];
+
+        function paginate(list) {
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            animateRender(list.slice(start, end));
+            renderPagination(list.length);
+        }
+
+        function renderPagination(total) {
+            const pages = Math.ceil(total / itemsPerPage);
+            const pagDiv = document.getElementById("pagination");
+            pagDiv.innerHTML = "";
+
+            for (let i = 1; i <= pages; i++) {
+                pagDiv.innerHTML += `
+            <button class="btn btn-outline-success mx-1 ${i === currentPage ? 'active' : ''}"
+                    onclick="goPage(${i})">${i}</button>
+        `;
+            }
+        }
+
+        function goPage(page) {
+            currentPage = page;
+            paginate(filteredTurfs);
+        }
+
+        function filterByPrice(price) {
+            document.getElementById("priceValue").innerText = price;
+
+            filteredTurfs = featuredTurfs.filter(t => t.pricePerHour <= price);
+
+            currentPage = 1;
+            paginate(filteredTurfs);
+        }
+
+     function toggleFavorite(id, btn) {
+  const user = JSON.parse(localStorage.getItem("loggedInUser"));
+  if (!user) return alert("Login first");
+
+  if (btn.classList.contains("active")) {
+    fetch(`http://localhost:5000/api/favorites/${id}/${user.email}`, {
+      method: "DELETE"
+    }).then(() => loadFavoritesUI());
+  } 
+  else {
+    fetch("http://localhost:5000/api/favorites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id,
+        userEmail: user.email
+      })
+    }).then(() => loadFavoritesUI());
+  }
+}
+
+        function loadFavoritesUI() {
+  const user = JSON.parse(localStorage.getItem("loggedInUser"));
+  if (!user) return;
+
+  fetch(`http://localhost:5000/api/favorites/${user.email}`)
+    .then(res => res.json())
+    .then(favs => {
+
+      document.querySelectorAll(".favorite-btn").forEach(btn => {
+        const id = btn.dataset.id;
+
+        if (favs.some(f => f.id === id)) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+
+    });
+}
+
+function openFavorites() {
+  const user = JSON.parse(localStorage.getItem("loggedInUser"));
+  if (!user) return;
+
+  fetch(`http://localhost:5000/api/favorites/${user.email}`)
+    .then(res => res.json())
+    .then(favs => {
+
+      const favTurfs = featuredTurfs.filter(t =>
+        favs.some(f => f.id === t._id)
+      );
+
+      const list = document.getElementById("favoriteList");
+
+      if (favTurfs.length === 0) {
+        list.innerHTML = "<p class='text-center text-muted'>No favorites yet</p>";
+        return;
+      }
+
+      list.innerHTML = favTurfs.map(t => `
+        <div class="card mb-3 shadow-sm">
+          <div class="card-body d-flex justify-content-between align-items-center">
+
+            <div>
+              <h5 class="fw-bold mb-1">${t.branch}</h5>
+              <p class="text-muted mb-1">${t.location}</p>
+              <p class="fw-bold text-success">₹${t.pricePerHour}/hr</p>
+            </div>
+
+            <div class="d-flex flex-column gap-2">
+
+              <a href="turf-details.html?id=${t._id}&price=${t.pricePerHour}"
+                 class="btn btn-success btn-sm">
+                Book Now
+              </a>
+
+              <button class="btn btn-outline-danger btn-sm"
+                onclick="removeFavorite('${t._id}')">
+                Remove
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      `).join("");
+
+      new bootstrap.Modal(
+        document.getElementById("favoritesModal")
+      ).show();
+    });
+}
+
+function openFavorites() {
+  const user = JSON.parse(localStorage.getItem("loggedInUser"));
+  if (!user) return;
+
+  fetch(`http://localhost:5000/api/favorites/${user.email}`)
+    .then(res => res.json())
+    .then(favs => {
+
+      const favTurfs = featuredTurfs.filter(t =>
+        favs.some(f => f.id === t._id)
+      );
+
+      const list = document.getElementById("favoriteList");
+
+      if (favTurfs.length === 0) {
+        list.innerHTML = "<p class='text-center text-muted'>No favorites yet</p>";
+        return;
+      }
+
+      list.innerHTML = favTurfs.map(t => `
+        <div class="card mb-3 shadow-sm">
+          <div class="card-body d-flex justify-content-between align-items-center">
+
+            <div>
+              <h5 class="fw-bold mb-1">${t.branch}</h5>
+              <p class="text-muted mb-1">${t.location}</p>
+              <p class="fw-bold text-success">₹${t.pricePerHour}/hr</p>
+            </div>
+
+            <div class="d-flex flex-column gap-2">
+
+              <a href="turf-details.html?id=${t._id}&price=${t.pricePerHour}"
+                 class="btn btn-success btn-sm">
+                Book Now
+              </a>
+
+              <button class="btn btn-outline-danger btn-sm"
+                onclick="removeFavorite('${t._id}')">
+                Remove
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      `).join("");
+
+      new bootstrap.Modal(
+        document.getElementById("favoritesModal")
+      ).show();
+    });
+}
+
+function removeFavorite(id) {
+  const user = JSON.parse(localStorage.getItem("loggedInUser"));
+
+  fetch(`http://localhost:5000/api/favorites/${id}/${user.email}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+    loadFavoritesUI();
+    openFavorites();
+  });
+}
+
+
+        window.addEventListener("DOMContentLoaded", () => {
+            loadTurfs();
+            loadFavoritesUI();
+        });
+
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

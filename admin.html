@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PlayBook Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container">
+    <span class="navbar-brand fw-bold">PlayBook Admin Dashboard</span>
+    <button class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="container my-4">
+
+<!-- STATS -->
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm p-3 text-center">
+      <h6>Total Bookings</h6>
+      <h2 id="totalBookings">0</h2>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm p-3 text-center">
+      <h6>Total Revenue</h6>
+      <h2 id="totalRevenue">₹0</h2>
+    </div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="row g-2 mb-3">
+  <div class="col-md-6">
+    <input type="text" id="searchBox" class="form-control"
+      placeholder="Search by turf ID or user email"
+      oninput="applyFilter()">
+  </div>
+
+  <div class="col-md-6">
+    <input type="date" id="dateFilter" class="form-control"
+      onchange="applyFilter()">
+  </div>
+</div>
+
+<!-- BOOKINGS -->
+<div class="card shadow-sm p-3">
+  <h5 class="fw-bold mb-3">All Bookings</h5>
+  <div id="adminBookingList"></div>
+</div>
+
+</div>
+
+<script>
+
+const ADMIN_EMAIL = "admin@playbook.com";
+const currentUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+  alert("Admin only access");
+  window.location.href = "index.html";
+}
+
+let allBookings = [];
+
+/* ===== LOAD BOOKINGS ===== */
+
+function loadAdminBookings() {
+  fetch("http://localhost:5000/api/bookings")
+    .then(res => res.json())
+    .then(data => {
+      allBookings = data;
+      renderBookings(allBookings);
+    });
+}
+
+/* ===== RENDER ===== */
+
+function renderBookings(bookings) {
+
+  const list = document.getElementById("adminBookingList");
+
+  document.getElementById("totalBookings").innerText = bookings.length;
+
+  const revenue = bookings.reduce((sum,b)=> sum + Number(b.totalPrice||0),0);
+  document.getElementById("totalRevenue").innerText = "₹" + revenue;
+
+  if (bookings.length === 0) {
+    list.innerHTML = "<p class='text-muted'>No bookings found</p>";
+    return;
+  }
+
+  list.innerHTML = bookings.map(b => `
+  <div class="border rounded p-3 mb-2">
+    <div class="fw-bold">${b.turfId}</div>
+
+    <div>Name: ${b.name}</div>
+    <div>Phone: ${b.phone}</div>
+    <div>User: ${b.userEmail}</div>
+
+    <div>Date: ${b.date}</div>
+    <div>Slots: ${b.slots.join(", ")}</div>
+
+    <div class="fw-bold text-success">₹${b.totalPrice}</div>
+  </div>
+`).join("");
+}
+
+/* ===== FILTER ===== */
+
+function applyFilter() {
+
+  const text = document.getElementById("searchBox").value.toLowerCase();
+  const date = document.getElementById("dateFilter").value;
+
+  let filtered = allBookings.filter(b =>
+    b.turfId.toLowerCase().includes(text) ||
+    b.userEmail.toLowerCase().includes(text)
+  );
+
+  if (date) {
+    filtered = filtered.filter(b => b.date === date);
+  }
+
+  renderBookings(filtered);
+}
+
+/* ===== INIT ===== */
+
+window.onload = loadAdminBookings;
+
+</script>
+
+</body>
+</html>

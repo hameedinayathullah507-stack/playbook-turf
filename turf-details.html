@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>PlayBook | Booking</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<style>
+    .slot-booked {
+        background-color: #ccc !important;
+        border-color: #ccc !important;
+        color: #555 !important;
+        cursor: not-allowed;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.8s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<body class="bg-light">
+
+
+    <div class="container mt-5 fade-in">
+
+
+        <!-- TURF DETAILS -->
+        <div id="turfDetailContent" class="card p-4 shadow mb-4">
+            <h4>Loading Turf Details...</h4>
+        </div>
+        <!-- DATE SELECTION -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Select Date</label>
+            <input type="date" id="bookingDate" class="form-control">
+        </div>
+        <!-- SLOT SELECTION -->
+        <div class="card p-4 shadow">
+            <h4 class="fw-bold mb-3">Select Time Slot</h4>
+
+            <div class="d-flex gap-2 flex-wrap mb-3" id="slotContainer"></div>
+
+
+            <div class="mb-3">
+                <label class="form-label">Your Name</label>
+                <input type="text" id="userName" class="form-control" placeholder="Enter your name">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" id="userPhone" class="form-control" placeholder="Enter phone number">
+            </div>
+
+            <button class="btn btn-success w-100 mt-3" id="payBtn" disabled>
+                Select time slot
+            </button>
+        </div>
+
+    </div>
+
+    <h4 class="fw-bold mt-4">User Reviews</h4>
+
+    <textarea id="reviewText" class="form-control mb-2" placeholder="Write your review..."></textarea>
+
+    <button class="btn btn-success mb-3" onclick="addReview()">
+        Submit Review
+    </button>
+
+    <div id="reviewList"></div>
+
+
+    <!-- SCRIPT -->
+    <script>
+
+
+        // Set minimum booking date as today
+        const dateInput = document.getElementById("bookingDate");
+        const today = new Date().toISOString().split("T")[0];
+        dateInput.min = today;
+
+        /* =========================
+           LOGIN PROTECTION
+        ========================= */
+        const isLoggedIn = localStorage.getItem("isLoggedIn");
+        if (!isLoggedIn) {
+            alert("Please login to book a turf");
+            window.location.href = "login.html";
+        }
+
+        /* =========================
+           URL PARAMS
+        ========================= */
+        const urlParams = new URLSearchParams(window.location.search);
+        const turfId = urlParams.get("id");
+        const pricePerSlot = Number(urlParams.get("price"));
+        if (!pricePerSlot) {
+            alert("Price not loaded correctly");
+            window.location.href = "/";
+        }
+
+        if (!turfId) {
+            alert("Invalid turf selection");
+            window.location.href = "/";
+        }
+
+        /* =========================
+           CONFIG
+        ========================= */
+        let selectedSlots = [];
+        // REAL-LIFE TURF SLOTS (5 AM – 11 PM)
+        const timeSlots = [
+            "05:00 AM", "06:00 AM", "07:00 AM", "08:00 AM", "09:00 AM",
+            "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM",
+            "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM", "09:00 PM", "10:00 PM", "11:00 PM"
+        ];
+
+        async function loadSlots() {
+            const slotContainer = document.getElementById("slotContainer");
+            const bookingDate = document.getElementById("bookingDate").value;
+
+            slotContainer.innerHTML = "";
+
+            const bookedSlots = bookingDate
+                ? await getBookedSlotsForDate(bookingDate)
+                : [];
+
+
+            timeSlots.forEach(time => {
+                const btn = document.createElement("button");
+                btn.innerText = time;
+
+                if (bookedSlots.includes(time)) {
+                    btn.className = "btn slot-booked";
+                    btn.disabled = true;
+                } else {
+                    btn.className = "btn btn-outline-success slot-btn";
+                    btn.onclick = () => selectSlot(btn, time);
+                }
+
+                slotContainer.appendChild(btn);
+            });
+        }
+
+
+        async function getBookedSlotsForDate(date) {
+            const res = await fetch("http://localhost:5000/api/bookings");
+            const bookings = await res.json();
+
+            return bookings
+                .filter(b => b.turfId === turfId && b.date === date)
+                .flatMap(b => b.slots);
+        }
+
+
+        /* =========================
+           LOAD TURF DETAILS
+        ========================= */
+        function loadDetails() {
+            document.getElementById("turfDetailContent").innerHTML = `
+        <h3 class="fw-bold mb-2">PlayBook Turf Booking</h3>
+        <p class="text-muted mb-1">Turf ID: <strong>${turfId}</strong></p>
+        <p class="text-muted">Price per slot: ₹${pricePerSlot}</p>
+    `;
+        }
+
+        /* =========================
+           SLOT SELECTION
+        ========================= */
+        function selectSlot(button, time) {
+
+            if (selectedSlots.includes(time)) {
+                selectedSlots = selectedSlots.filter(t => t !== time);
+                button.classList.remove("btn-success");
+                button.classList.add("btn-outline-success");
+            } else {
+                selectedSlots.push(time);
+                button.classList.remove("btn-outline-success");
+                button.classList.add("btn-success");
+            }
+
+            updateConfirmButton();
+        }
+
+        /* =========================
+           UPDATE BUTTON
+        ========================= */
+        function updateConfirmButton() {
+            const payBtn = document.getElementById("payBtn");
+            const total = selectedSlots.length * pricePerSlot;
+
+            if (selectedSlots.length === 0) {
+                payBtn.disabled = true;
+                payBtn.innerText = "Select time slot";
+                return;
+            }
+
+            payBtn.disabled = false;
+            payBtn.innerText = `Confirm Booking (${selectedSlots.length} slot) – ₹${total}`;
+        }
+
+
+        // after loadSlots() function
+        document.getElementById("bookingDate").addEventListener("change", () => {
+            selectedSlots = [];
+            updateConfirmButton();
+            loadSlots();
+        });
+
+        /* =========================
+           CONFIRM BOOKING
+        ========================= */
+
+        document.getElementById("payBtn").onclick = async () => {
+
+            const bookingDate = document.getElementById("bookingDate").value;
+            if (!bookingDate || selectedSlots.length === 0) {
+                alert("Select date & slots first");
+                return;
+            }
+
+            const currentUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+            const booking = {
+                bookingId: "BK-" + Date.now(),
+                userEmail: currentUser.email,
+                turfId,
+                name: document.getElementById("userName").value,
+                phone: document.getElementById("userPhone").value,
+                slots: selectedSlots,
+                totalPrice: selectedSlots.length * pricePerSlot,
+                date: bookingDate,
+                status: "Confirmed"
+            };
+
+            fetch("http://localhost:5000/api/bookings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(booking)
+            })
+                .then(() => {
+                    alert("✅ Booking Confirmed!");
+                    window.location.href = "/";
+                })
+                .catch(() => {
+                    alert("❌ Booking failed");
+                });
+
+        };
+
+        function addReview() {
+            const text = document.getElementById("reviewText").value.trim();
+            if (!text) return;
+
+            let reviews = JSON.parse(localStorage.getItem("reviews")) || [];
+            reviews.push(text);
+            localStorage.setItem("reviews", JSON.stringify(reviews));
+
+            document.getElementById("reviewText").value = "";
+            loadReviews();
+        }
+
+        function loadReviews() {
+            const list = document.getElementById("reviewList");
+            const reviews = JSON.parse(localStorage.getItem("reviews")) || [];
+
+            list.innerHTML = reviews.map(r =>
+                `<div class="card p-2 mb-2">${r}</div>`
+            ).join("");
+        }
+
+        window.onload = () => {
+            loadDetails();
+            loadSlots();
+            loadReviews();
+        };
+
+
+    </script>
+
+
+</body>
+
+</html>
